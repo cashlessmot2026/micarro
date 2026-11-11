@@ -1,0 +1,19 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { registerSW } from 'virtual:pwa-register';
+import App from './App';
+import { StoreProvider } from './store';
+import { ToastProvider } from './components/ui';
+import './styles.css';
+
+registerSW({ immediate: true });
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <StoreProvider>
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    </StoreProvider>
+  </React.StrictMode>
+);
