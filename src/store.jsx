@@ -3,6 +3,7 @@ import { MODULE_KEYS } from './constants';
 import { uid, num } from './utils';
 import { supabase } from './supabase';
 import { enqueue, flush, pullAll, onQueueChange } from './sync';
+import { flushPhotos } from './photos';
 
 const KEY = 'mi-vehiculo-v1';
 const MODE_KEY = 'mi-vehiculo-mode';
@@ -73,6 +74,7 @@ export function StoreProvider({ children }) {
     setSyncInfo((x) => ({ ...x, syncing: true, error: null }));
     try {
       await flush();
+      flushPhotos();
       const remote = await pullAll();
       const cur = stateRef.current;
       const toPush = [];

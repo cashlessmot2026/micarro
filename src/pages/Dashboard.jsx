@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Gauge, Fuel, TrendingUp, Coins, Route, ChevronRight, AlertTriangle, BellRing, CheckCircle2, Info, Droplet, Plus, CalendarClock } from 'lucide-react';
+import { Gauge, Fuel, TrendingUp, Coins, Route, ChevronRight, AlertTriangle, BellRing, CheckCircle2, Info, Droplet, Plus, CalendarClock, Ticket } from 'lucide-react';
 import { useActive } from '../store';
 import { MODULES } from '../modules';
 import { MODULE_KEYS, effUnit, vehicleType, isElectric } from '../constants';
@@ -141,6 +141,11 @@ export default function Dashboard() {
               </button>
             );
           })}
+          <button className="quick" style={{ '--c': '#ec4899', '--d': '280ms' }} onClick={() => setAdding({ m: 'expenses', preset: { kind: 'Gasto', category: 'Peaje' } })}>
+            <span className="icon-bubble"><Ticket size={22} /></span>
+            <span>Peaje</span>
+            <Plus size={14} className="quick-plus" />
+          </button>
         </div>
       </section>
 
@@ -193,7 +198,8 @@ export default function Dashboard() {
       {adding && (
         <RecordSheet
           moduleKey={typeof adding === 'string' ? adding : adding.m}
-          record={typeof adding === 'string' ? null : adding.r}
+          record={typeof adding === 'string' ? null : adding.r || null}
+          preset={typeof adding === 'string' ? undefined : adding.preset}
           onClose={() => setAdding(null)}
         />
       )}

@@ -87,6 +87,25 @@ export function resizeImage(file, max = 640, quality = 0.75) {
   });
 }
 
+/** Comprime una foto (tickets, recibos) a JPEG para guardar y subir. */
+export function imageToBlob(file, max = 1400, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo procesar la imagen'))), 'image/jpeg', quality);
+    };
+    img.onerror = () => reject(new Error('Imagen no válida'));
+    img.src = url;
+  });
+}
+
 export function download(name, content, type = 'application/json') {
   const blob = new Blob([content], { type });
   const a = document.createElement('a');

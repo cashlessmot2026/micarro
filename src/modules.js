@@ -12,6 +12,9 @@ const dateKm = [
   { name: 'km', label: 'Kilometraje', type: 'number', required: true, half: true, suffix: 'km', odometer: true }
 ];
 const gpsNote = { name: 'notes', label: 'Notas', type: 'textarea' };
+const photo = (label) => ({ name: 'photo', label, type: 'photo' });
+export const TOLL_CATEGORIES = ['Cat. I (auto, campero, camioneta)', 'Cat. II (bus, buseta, camión 2 ejes)', 'Cat. III', 'Cat. IV', 'Cat. V', 'Cat. VI', 'Cat. VII', 'Moto (exenta / especial)'];
+export const PAY_METHODS = ['Efectivo', 'Tag / Flypass', 'Tarjeta', 'Transferencia / app'];
 
 export const MODULES = {
   fuel: {
@@ -28,6 +31,7 @@ export const MODULES = {
       { name: 'batteryTo', label: 'Batería final', type: 'number', half: true, suffix: '%', show: (r) => fuelInfo(r.fuelType).electric },
       { name: 'full', label: 'Tanque lleno / carga completa', type: 'toggle', hint: 'Necesario para calcular el rendimiento exacto' },
       { name: 'station', label: 'Estación / punto de carga', type: 'text', placeholder: 'Terpel, Primax, Biomax, Celsia, Enel X…' },
+      photo('Foto del recibo (opcional)'),
       gpsNote
     ],
     defaults: (v) => { const f = defaultFuel(v); return { date: today(), fuelType: f, unit: fuelInfo(f).unit, full: true }; },
@@ -68,6 +72,7 @@ export const MODULES = {
       { name: 'workshop', label: 'Taller', type: 'text', half: true },
       { name: 'nextKm', label: 'Próximo servicio (km)', type: 'number', half: true, suffix: 'km', hint: 'Genera alerta automática' },
       { name: 'nextDate', label: 'Próximo servicio (fecha)', type: 'date', half: true },
+      photo('Foto de la factura (opcional)'),
       gpsNote
     ],
     defaults: () => ({ date: today(), type: 'Cambio de aceite' }),
@@ -184,6 +189,7 @@ export const MODULES = {
       { name: 'status', label: 'Estado', type: 'select', options: opts(FINE_STATUS), half: true },
       { name: 'dueDate', label: 'Fecha límite de pago', type: 'date', half: true, hint: 'Ej: plazo para descuento por curso' },
       { name: 'paidDate', label: 'Fecha de pago', type: 'date', show: (r) => r.status === 'Pagado' },
+      photo('Foto del comparendo / recibo (opcional)'),
       gpsNote
     ],
     defaults: () => ({ date: today(), status: 'Pendiente' }),
@@ -235,26 +241,32 @@ export const MODULES = {
     fields: [
       { name: 'kind', label: 'Tipo', type: 'segmented', options: opts(['Gasto', 'Ingreso']) },
       { name: 'category', label: 'Categoría', type: 'select', required: true, options: (r) => opts(r.kind === 'Ingreso' ? INCOME_CATS : EXPENSE_CATS) },
-      { name: 'description', label: 'Descripción', type: 'text' },
+      { name: 'tollName', label: 'Nombre del peaje', type: 'text', placeholder: 'Ej: Peaje Andes, Chusacá, Pipiral…', show: (r) => r.category === 'Peaje' },
+      { name: 'tollCategory', label: 'Categoría', type: 'select', half: true, options: opts(TOLL_CATEGORIES), show: (r) => r.category === 'Peaje' },
+      { name: 'payMethod', label: 'Forma de pago', type: 'select', half: true, options: opts(PAY_METHODS), show: (r) => r.kind !== 'Ingreso' },
+      { name: 'description', label: 'Descripción', type: 'text', show: (r) => r.category !== 'Peaje' },
       { name: 'date', label: 'Fecha', type: 'date', required: true, half: true },
       { name: 'km', label: 'Kilometraje', type: 'number', half: true, suffix: 'km', odometer: true },
       { name: 'amount', label: 'Valor', type: 'money', required: true },
+      photo('Foto del ticket / recibo (opcional)'),
       gpsNote
     ],
-    defaults: () => ({ date: today(), kind: 'Gasto', category: 'Peaje' }),
+    defaults: () => ({ date: today(), kind: 'Gasto', category: 'Peaje', tollCategory: TOLL_CATEGORIES[0], payMethod: 'Efectivo' }),
     derive(r, changed) {
       if (changed === 'kind') r.category = r.kind === 'Ingreso' ? INCOME_CATS[0] : EXPENSE_CATS[0];
       return r;
     },
-    title: (r) => r.category + (r.description ? ` · ${r.description}` : ''),
-    subtitle: (r) => r.kind,
+    title: (r) => r.category + (r.category === 'Peaje' && r.tollName ? ` ${r.tollName}` : r.description ? ` · ${r.description}` : ''),
+    subtitle: (r) => [r.kind, r.category === 'Peaje' ? r.tollCategory?.split(' (')[0] : null, r.payMethod].filter(Boolean).join(' · '),
     amount: (r) => (r.kind === 'Ingreso' ? 0 : num(r.amount) || 0),
     displayAmount: (r) => (r.kind === 'Ingreso' ? num(r.amount) || 0 : -(num(r.amount) || 0)),
     badge: (r) => (r.kind === 'Ingreso' ? { text: 'Ingreso', tone: 'ok' } : null),
     summary(recs, { currency }) {
       const inc = recs.filter((r) => r.kind === 'Ingreso').reduce((a, r) => a + (num(r.amount) || 0), 0);
       const exp = recs.filter((r) => r.kind !== 'Ingreso').reduce((a, r) => a + (num(r.amount) || 0), 0);
+      const tolls = recs.filter((r) => r.kind !== 'Ingreso' && r.category === 'Peaje');
       return [
+        { label: `Peajes (${tolls.length})`, value: fmtMoney(tolls.reduce((a, r) => a + (num(r.amount) || 0), 0), currency) },
         { label: 'Gastos', value: fmtMoney(exp, currency) },
         { label: 'Ingresos', value: fmtMoney(inc, currency) },
         { label: 'Balance', value: fmtMoney(inc - exp, currency) }

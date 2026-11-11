@@ -1,18 +1,20 @@
-import { useEffect, useState } from 'react';
-import { MapPin, Loader2, Trash2, CheckCheck, Navigation, XCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { MapPin, Loader2, Trash2, CheckCheck, Navigation, XCircle, Camera, ImageOff, Maximize2 } from 'lucide-react';
 import { MODULES } from '../modules';
 import { CHECK_GROUPS } from '../constants';
 import { useStore, useActive } from '../store';
-import { getPosition, mapsUrl, num, fmtNum, sortRecords } from '../utils';
+import { getPosition, mapsUrl, num, fmtNum, sortRecords, imageToBlob, uid } from '../utils';
+import { savePhoto, removePhoto, usePhotoUrl } from '../photos';
 import { Sheet, Toggle, Rating, Segmented, useToast } from './ui';
 
-export default function RecordSheet({ moduleKey, record, onClose }) {
+export default function RecordSheet({ moduleKey, record, onClose, preset }) {
   const { saveRecord, deleteRecord } = useStore();
   const { vehicle, odo, data, settings } = useActive();
   const toast = useToast();
   const mod = MODULES[moduleKey];
   const isNew = !record;
-  const [draft, setDraft] = useState(() => (record ? structuredClone(record) : mod.defaults(vehicle, settings)));
+  const [draft, setDraft] = useState(() => (record ? structuredClone(record) : { ...mod.defaults(vehicle, settings), ...preset }));
+  const [pendingPhoto, setPendingPhoto] = useState(null); // { id, blob, url }
   const [tried, setTried] = useState(false);
   const [gps, setGps] = useState({ state: 'idle', msg: '' });
   const [confirmDel, setConfirmDel] = useState(false);
@@ -48,6 +50,8 @@ export default function RecordSheet({ moduleKey, record, onClose }) {
       if ((f.type === 'number' || f.type === 'money') && clean[f.name] !== '' && clean[f.name] != null) clean[f.name] = Number(clean[f.name]);
       if (f.show && !f.show(clean)) delete clean[f.name];
     }
+    if (pendingPhoto && clean.photo === pendingPhoto.id) savePhoto(pendingPhoto.id, pendingPhoto.blob);
+    if (record?.photo && record.photo !== clean.photo) removePhoto(record.photo);
     saveRecord(moduleKey, clean);
     toast(isNew ? `${cap(mod.singular)} guardado` : 'Cambios guardados');
     onClose();
@@ -55,6 +59,7 @@ export default function RecordSheet({ moduleKey, record, onClose }) {
 
   const remove = () => {
     if (!confirmDel) return setConfirmDel(true);
+    if (record.photo) removePhoto(record.photo);
     deleteRecord(moduleKey, record.id);
     toast('Registro eliminado', 'info');
     onClose();
@@ -62,7 +67,7 @@ export default function RecordSheet({ moduleKey, record, onClose }) {
 
   return (
     <Sheet
-      title={`${isNew ? 'Nuevo' : 'Editar'}: ${mod.singular}`}
+      title={`${isNew ? 'Nuevo' : 'Editar'}: ${moduleKey === 'expenses' && draft.category === 'Peaje' ? 'pago de peaje' : mod.singular}`}
       onClose={onClose} icon={mod.icon} color={mod.color}
       footer={
         <>
@@ -81,7 +86,8 @@ export default function RecordSheet({ moduleKey, record, onClose }) {
       <div className="form-grid">
         {visible.map((f) => (
           <Field key={f.name} f={f} value={draft[f.name]} draft={draft} onChange={(v) => set(f.name, v)}
-            invalid={tried && missing.includes(f)} odo={odo} lastFuel={lastFuel} />
+            invalid={tried && missing.includes(f)} odo={odo} lastFuel={lastFuel}
+            pendingPhoto={pendingPhoto} setPendingPhoto={setPendingPhoto} />
         ))}
       </div>
 
@@ -109,12 +115,13 @@ export default function RecordSheet({ moduleKey, record, onClose }) {
   );
 }
 
-function Field({ f, value, onChange, draft, invalid, odo, lastFuel }) {
+function Field({ f, value, onChange, draft, invalid, odo, lastFuel, pendingPhoto, setPendingPhoto }) {
   const cls = `field ${f.half ? 'half' : ''} ${invalid ? 'invalid' : ''}`;
   const suffix = typeof f.suffix === 'function' ? f.suffix(draft) : f.suffix;
   const options = typeof f.options === 'function' ? f.options(draft) : f.options;
 
   if (f.type === 'toggle') return <div className="field"><Toggle checked={!!value} onChange={onChange} label={f.label} hint={f.hint} /></div>;
+  if (f.type === 'photo') return <PhotoField label={f.label} value={value} onChange={onChange} pending={pendingPhoto} setPending={setPendingPhoto} />;
   if (f.type === 'checklist') return <Checklist value={value || {}} onChange={onChange} />;
   if (f.type === 'segmented') return <div className="field"><Segmented options={options} value={value} onChange={onChange} /></div>;
   if (f.type === 'rating') return <div className="field"><span className="label">{f.label}</span><Rating value={value || 0} onChange={onChange} /></div>;
@@ -202,3 +209,53 @@ function Checklist({ value, onChange }) {
 }
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+function PhotoField({ label, value, onChange, pending, setPending }) {
+  const ref = useRef();
+  const [busy, setBusy] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const saved = usePhotoUrl(pending && pending.id === value ? null : value);
+  const url = pending && pending.id === value ? pending.url : saved.url;
+
+  useEffect(() => () => { if (pending?.url) URL.revokeObjectURL(pending.url); }, [pending]);
+
+  const pick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    try {
+      const blob = await imageToBlob(file);
+      const id = uid();
+      setPending({ id, blob, url: URL.createObjectURL(blob) });
+      onChange(id);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="field">
+      <span className="label">{label}</span>
+      {value && (url || saved.state === 'loading') ? (
+        <div className="photo-prev">
+          {url ? <img src={url} alt="Foto adjunta" onClick={() => setZoom(true)} /> : <Loader2 className="spin" />}
+          <div className="photo-actions">
+            {url && <button type="button" className="icon-btn glass" onClick={() => setZoom(true)} aria-label="Ampliar"><Maximize2 size={18} /></button>}
+            <button type="button" className="icon-btn glass" onClick={() => ref.current.click()} aria-label="Cambiar foto"><Camera size={18} /></button>
+            <button type="button" className="icon-btn glass" onClick={() => { onChange(null); setPending(null); }} aria-label="Quitar foto"><Trash2 size={18} /></button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="photo-pick" onClick={() => ref.current.click()} disabled={busy}>
+          {busy ? <Loader2 className="spin" /> : value && saved.state === 'missing' ? <ImageOff size={22} /> : <Camera size={24} />}
+          <span>{value && saved.state === 'missing' ? 'Foto no disponible en este dispositivo · tomar otra' : 'Tomar foto o subir imagen'}</span>
+        </button>
+      )}
+      <input ref={ref} type="file" accept="image/*" capture="environment" hidden onChange={pick} />
+      {zoom && url && (
+        <div className="photo-zoom" onClick={() => setZoom(false)}><img src={url} alt="Foto adjunta" /></div>
+      )}
+    </div>
+  );
+}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, MapPin, ExternalLink } from 'lucide-react';
+import { Plus, Search, MapPin, ExternalLink, Camera } from 'lucide-react';
 import { MODULES } from '../modules';
 import { useActive } from '../store';
 import { sortRecords, fmtDate, fmtNum, fmtMoney, mapsUrl } from '../utils';
@@ -66,6 +66,7 @@ export default function ModulePage({ moduleKey, autoNew }) {
                   <span className="rec-sub">{mod.subtitle(r, cur)}</span>
                   <span className="rec-meta">
                     {fmtDate(r.date)}{r.km != null && r.km !== '' ? ` · ${fmtNum(r.km)} km` : ''}
+                    {r.photo && <span className="photo-tag"><Camera size={13} />foto</span>}
                     {r.gps && (
                       <a href={mapsUrl(r.gps)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="gps-link" aria-label="Ver en mapa">
                         <MapPin size={13} />mapa
