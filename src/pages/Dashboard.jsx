@@ -10,6 +10,7 @@ import { StackedBars, LineChart, Donut } from '../components/Charts';
 import { Ring, Plate } from '../components/ui';
 import RecordSheet from '../components/RecordSheet';
 import { go } from '../router';
+import { InstallButton } from '../components/Install';
 
 export const ALERT_ICON = { danger: AlertTriangle, warn: BellRing, info: Info, ok: CheckCircle2 };
 
@@ -62,6 +63,8 @@ export default function Dashboard() {
           {a.kpd && <div className="odo-side"><small>Promedio</small><b>{fmtNum(a.kpd, 0)} km/día</b></div>}
         </div>
       </section>
+
+      <InstallButton variant="banner" />
 
       {urgent.length > 0 && (
         <section>

@@ -3,6 +3,7 @@ import { Mail, Lock, Loader2, ArrowRight, Fuel, Bell, MapPin, ScanLine } from 'l
 import { supabase } from '../supabase';
 import { useStore } from '../store';
 import { Segmented } from '../components/ui';
+import { InstallButton } from '../components/Install';
 
 export default function Auth() {
   const { setMode } = useStore();
@@ -45,6 +46,7 @@ export default function Auth() {
           <span><Fuel size={16} />Rendimiento</span><span><Bell size={16} />Alertas</span>
           <span><MapPin size={16} />GPS</span><span><ScanLine size={16} />OCR tarjeta</span>
         </div>
+        <div className="mt"><InstallButton variant="pill" label="Descargar como app" /></div>
       </div>
 
       <form className="card auth-card" onSubmit={submit}>

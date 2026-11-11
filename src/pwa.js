@@ -1,27 +1,40 @@
 import { useEffect, useState } from 'react';
 
-let deferred = null;
 const subs = new Set();
+const notify = () => subs.forEach((f) => f());
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; subs.forEach((f) => f()); });
-  window.addEventListener('appinstalled', () => { deferred = null; subs.forEach((f) => f()); });
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__bip = e; notify(); });
+  window.addEventListener('bip-ready', notify);
+  window.addEventListener('appinstalled', () => { window.__bip = null; localStorage.setItem('mi-vehiculo-installed', '1'); notify(); });
+}
+
+export function platform() {
+  const ua = navigator.userAgent;
+  const ios = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const android = /android/i.test(ua);
+  const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|TikTok|Snapchat|; wv\)/i.test(ua);
+  const iosNotSafari = ios && /CriOS|FxiOS|EdgiOS/i.test(ua);
+  const samsung = /SamsungBrowser/i.test(ua);
+  const firefox = /Firefox|FxiOS/i.test(ua);
+  return { ios, android, inApp, iosNotSafari, samsung, firefox, desktop: !ios && !android };
 }
 
 export function useInstall() {
   const [, force] = useState(0);
   useEffect(() => { const f = () => force((x) => x + 1); subs.add(f); return () => subs.delete(f); }, []);
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   return {
-    canInstall: !!deferred,
+    canInstall: !!window.__bip,
     installed: standalone,
-    ios,
     async install() {
-      if (!deferred) return false;
-      deferred.prompt();
-      const { outcome } = await deferred.userChoice;
-      deferred = null;
-      subs.forEach((f) => f());
+      const p = window.__bip;
+      if (!p) return false;
+      window.__bip = null;
+      notify();
+      await p.prompt();
+      const { outcome } = await p.userChoice;
+      window.__bip = null;
+      notify();
       return outcome === 'accepted';
     }
   };

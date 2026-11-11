@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import More from './pages/More';
 import Auth from './pages/Auth';
 import { Segmented, Plate } from './components/ui';
+import { InstallButton } from './components/Install';
 
 const NAV = [
   { to: '/', icon: Home, label: 'Inicio' },
@@ -54,6 +55,7 @@ export default function App() {
           <h1>¡Bienvenido!</h1>
           <p>Agrega tu vehículo para controlar combustible, mantenimientos, documentos y más. Puedes escanear la tarjeta de propiedad para llenarlo más rápido.</p>
           <button className="btn btn-primary block" onClick={() => setNewVehicle(true)}><ScanLine size={18} />Agregar mi vehículo</button>
+          <InstallButton variant="pill" label="Descargar como app" />
           {syncInfo.syncing && <p className="small muted center"><Loader2 size={14} className="spin" /> Buscando tus datos en la nube…</p>}
         </div>
         {newVehicle && <VehicleSheet firstTime onClose={() => setNewVehicle(false)} />}
@@ -93,6 +95,7 @@ export default function App() {
         )}
         {isSub && <h1 className="topbar-title">{TITLES[path]}</h1>}
         <div className="topbar-actions">
+          <InstallButton variant="icon" />
           <span className="sync-dot" title={session ? (syncInfo.pending ? 'Cambios pendientes por subir' : 'Sincronizado') : 'Sin cuenta'}>
             {!session ? <CloudOff size={18} /> : syncInfo.syncing ? <Loader2 size={18} className="spin" /> : <Cloud size={18} className={syncInfo.pending ? 'warn-text' : 'ok-text'} />}
           </span>

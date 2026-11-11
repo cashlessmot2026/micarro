@@ -455,3 +455,19 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 .photo-zoom img { max-width: 100%; max-height: 100%; border-radius: 16px; object-fit: contain; }
 .photo-tag { display: inline-flex; align-items: center; gap: 2px; color: #ec4899; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, #ec4899 12%, transparent); }
 .photo-pick:disabled { opacity: 0.6; }
+
+/* Instalar app */
+.install-pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; font-weight: 700; font-size: 0.88rem; color: #fff; background: linear-gradient(135deg, #22c55e, #10b981); box-shadow: 0 10px 24px -10px #22c55e; animation: pop 0.5s var(--spring) both, glow 2.4s ease-in-out 1s infinite; transition: transform 0.2s var(--spring); }
+.install-pill:active { transform: scale(0.94); }
+@keyframes glow { 50% { box-shadow: 0 10px 30px -6px #22c55e; } }
+.install-icon { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); animation: pop 0.5s var(--spring) both; }
+.install-banner { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 14px; border-radius: var(--r-lg); background: linear-gradient(135deg, color-mix(in srgb, #22c55e 18%, var(--card)), var(--card)); border: 1px solid color-mix(in srgb, #22c55e 35%, transparent); animation: rise 0.5s var(--ease) both; }
+.install-banner img { width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0; }
+.install-banner b { display: block; font-size: 0.95rem; }
+.install-banner small { display: block; color: var(--muted); font-size: 0.76rem; line-height: 1.35; }
+.install-banner .btn-primary { --c: #22c55e; }
+.install-steps { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.install-steps li { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--r-md); background: var(--card-2); font-size: 0.9rem; line-height: 1.4; animation: rise 0.4s var(--ease) both; animation-delay: var(--d); }
+.step-n { width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; background: linear-gradient(135deg, var(--primary), var(--primary-2)); }
+.auth-hero .install-pill { margin-inline: auto; }
+.welcome .install-pill { align-self: center; }

@@ -5,6 +5,7 @@ import { MODULE_KEYS } from '../constants';
 import { MODULES } from '../modules';
 import { download, toCSV, today } from '../utils';
 import { useInstall } from '../pwa';
+import { InstallButton } from '../components/Install';
 import { Toggle, Segmented, useToast } from '../components/ui';
 
 export default function Settings() {
@@ -75,11 +76,8 @@ export default function Settings() {
       {!inst.installed && (
         <section className="card">
           <h3 className="card-h"><Smartphone size={18} />Instalar la app</h3>
-          {inst.canInstall ? (
-            <button className="btn btn-primary block" onClick={inst.install}><Download size={16} />Instalar en este dispositivo</button>
-          ) : (
-            <p className="small muted">{inst.ios ? 'En iPhone: toca Compartir y luego "Agregar a pantalla de inicio".' : 'Abre el menú del navegador y elige "Instalar app" o "Agregar a pantalla de inicio".'}</p>
-          )}
+          <p className="small muted">Quedará como una app más en tu celular o computador y funciona sin internet.</p>
+          <InstallButton variant="block" label="Instalar en este dispositivo" />
         </section>
       )}
 
