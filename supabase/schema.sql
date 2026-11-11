@@ -13,6 +13,8 @@ create table if not exists public.vehicles (
   created_at  timestamptz not null default now()
 );
 create index if not exists vehicles_user_idx on public.vehicles (user_id);
+-- Un propietario (data->>'ownerId' / data->>'ownerName') puede tener 1 o más vehículos
+create index if not exists vehicles_owner_idx on public.vehicles (user_id, (data->>'ownerId'));
 
 -- ---------- Registros (combustible, mantenimientos, revisiones, documentos, comparendos, lavadas, gastos) ----------
 create table if not exists public.records (
@@ -75,3 +77,14 @@ select r.id, r.user_id, r.vehicle_id,
        (r.data->'gps'->>'lng')::numeric   as lng
 from public.records r
 where r.module = 'fuel' and not r.deleted;
+
+-- ---------- Vehículos por propietario (opcional) ----------
+create or replace view public.v_owners with (security_invoker = true) as
+select user_id,
+       coalesce(nullif(data->>'ownerId', ''), nullif(data->>'ownerName', ''), 'Sin propietario') as propietario_id,
+       max(data->>'ownerName') as propietario,
+       count(*)                as vehiculos,
+       array_agg(coalesce(data->>'plate', id) order by created_at) as placas
+from public.vehicles
+where not deleted
+group by 1, 2;

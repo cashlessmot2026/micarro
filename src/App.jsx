@@ -108,7 +108,7 @@ export default function App() {
             {state.vehicles.map((v) => (
               <button key={v.id} className={`picker-item ${v.id === vehicle.id ? 'on' : ''}`} onClick={() => { setActive(v.id); setPicker(false); }}>
                 <span className="veh-emoji">{v.photo ? <img src={v.photo} alt="" /> : vehicleType(v.type).emoji}</span>
-                <span className="grow"><b>{v.name || `${v.brand} ${v.model}`}</b><small>{v.brand} {v.model} {v.year}</small></span>
+                <span className="grow"><b>{v.name || `${v.brand} ${v.model}`}</b><small>{v.brand} {v.model} {v.year}{v.ownerName ? ` · ${v.ownerName}` : ''}</small></span>
                 <Plate plate={v.plate} small />
               </button>
             ))}

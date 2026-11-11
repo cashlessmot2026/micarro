@@ -438,3 +438,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Propietarios */
+.owner-group + .owner-group { margin-top: 22px; }
+.owner-head { display: flex; align-items: center; gap: 10px; margin: 4px 4px 10px; animation: rise 0.4s var(--ease) both; }
+.owner-head b { display: block; font-size: 0.95rem; }
+.owner-head small { display: block; color: var(--muted); font-size: 0.74rem; }
+.chip svg { flex-shrink: 0; }

@@ -89,6 +89,11 @@ export function parseCard(raw) {
   const motor = near(/MOTOR/).match(/\b[A-Z0-9]{6,}\b/);
   if (motor) out.engine = motor[0];
 
+  const owner = near(/PROPIETARIO/).replace(/\b(APELLIDO|APELLIDOS|NOMBRE|NOMBRES|S|Y)\b/g, ' ').replace(/[^A-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (owner.split(' ').length >= 2) out.ownerName = cap(owner).slice(0, 60);
+  const ownerId = text.match(/\b(C\.?\s?C|NIT|C\.?\s?E|PASAPORTE)\.?\s*(?:NO\.?)?\s*[:.]?\s*(\d[\d.\s-]{5,14}\d)/);
+  if (ownerId) out.ownerId = `${ownerId[1].replace(/[.\s]/g, '')} ${ownerId[2].replace(/[.\s]/g, '')}`;
+
   const reg = near(/MATRICULA/).match(/\b(\d{2})[/-](\d{2})[/-](\d{4})\b/);
   if (reg) out.registrationDate = `${reg[3]}-${reg[2]}-${reg[1]}`;
 

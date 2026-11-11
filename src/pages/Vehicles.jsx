@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Plus, ScanLine, Camera, Loader2, Trash2, Check, ChevronDown, Pencil, ImagePlus } from 'lucide-react';
+import { Plus, ScanLine, Camera, Loader2, Trash2, Check, ChevronDown, Pencil, ImagePlus, User } from 'lucide-react';
 import { useStore, odometer } from '../store';
 import { VEHICLE_TYPES, POWERTRAINS, COLORS, catalogFor, vehicleType, MODULE_KEYS, isMotoType } from '../constants';
 import { scanPropertyCard } from '../ocr';
@@ -10,13 +10,29 @@ export default function Vehicles() {
   const { state, setActive } = useStore();
   const [editing, setEditing] = useState(null);
 
+  // Agrupa por propietario (un propietario puede tener 1 o más vehículos)
+  const groups = [];
+  for (const v of state.vehicles) {
+    const key = ownerKey(v);
+    let g = groups.find((x) => x.key === key);
+    if (!g) groups.push((g = { key, name: v.ownerName?.trim() || 'Sin propietario asignado', id: v.ownerId, list: [] }));
+    g.list.push(v);
+  }
+  groups.sort((a, b) => (a.key === '' ? 1 : b.key === '' ? -1 : a.name.localeCompare(b.name)));
+
   return (
     <div>
       {state.vehicles.length === 0 ? (
         <Empty icon={Plus} title="Sin vehículos" text="Agrega tu primer vehículo para empezar." />
-      ) : (
+      ) : groups.map((g) => (
+        <section key={g.key} className="owner-group">
+          <div className="owner-head">
+            <span className="icon-bubble sm"><User size={16} /></span>
+            <span className="grow"><b>{g.name}</b>{g.id && <small>{g.id}</small>}</span>
+            <span className="badge b-info">{g.list.length} {g.list.length === 1 ? 'vehículo' : 'vehículos'}</span>
+          </div>
         <div className="veh-list">
-          {state.vehicles.map((v, i) => {
+          {g.list.map((v, i) => {
             const data = Object.fromEntries(MODULE_KEYS.map((m) => [m, state.records[m].filter((r) => r.vehicleId === v.id)]));
             const active = v.id === state.activeId;
             return (
@@ -33,12 +49,15 @@ export default function Vehicles() {
             );
           })}
         </div>
-      )}
+        </section>
+      ))}
       <button className="btn btn-primary block mt" onClick={() => setEditing('new')}><Plus size={18} />Agregar vehículo</button>
       {editing && <VehicleSheet vehicle={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }
+
+const ownerKey = (v) => (v.ownerId || v.ownerName || '').toString().trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 const BLANK = { type: 'auto', powertrain: 'Gasolina', service: 'Particular', fuelUnit: 'gal' };
 
@@ -50,6 +69,9 @@ export function VehicleSheet({ vehicle, onClose, firstTime }) {
   const [more, setMore] = useState(!!vehicle);
   const [confirmDel, setConfirmDel] = useState(false);
   const [tried, setTried] = useState(false);
+  const { state } = useStore();
+  // Propietarios ya registrados, para reutilizarlos al agregar otro vehículo
+  const owners = [...new Map(state.vehicles.filter((x) => x.ownerName).map((x) => [x.ownerName.trim(), x.ownerId || ''])).entries()];
   const fileRef = useRef();
   const photoRef = useRef();
 
@@ -96,7 +118,7 @@ export function VehicleSheet({ vehicle, onClose, firstTime }) {
     onClose();
   };
 
-  const LABELS = { plate: 'Placa', brand: 'Marca', model: 'Modelo', version: 'Línea', year: 'Año', color: 'Color', vin: 'VIN', engine: 'Motor', cc: 'Cilindraje', powertrain: 'Combustible', type: 'Clase', service: 'Servicio', registrationDate: 'Matrícula' };
+  const LABELS = { plate: 'Placa', brand: 'Marca', model: 'Modelo', version: 'Línea', year: 'Año', color: 'Color', vin: 'VIN', engine: 'Motor', cc: 'Cilindraje', powertrain: 'Combustible', type: 'Clase', service: 'Servicio', registrationDate: 'Matrícula', ownerName: 'Propietario', ownerId: 'Identificación' };
 
   return (
     <Sheet title={vehicle ? 'Editar vehículo' : firstTime ? 'Tu primer vehículo' : 'Nuevo vehículo'} onClose={onClose}
@@ -165,6 +187,24 @@ export function VehicleSheet({ vehicle, onClose, firstTime }) {
           <div className="input-wrap"><input type="number" inputMode="numeric" value={v.initialKm ?? ''} onChange={(e) => set('initialKm', e.target.value)} placeholder="0" /><span className="suffix">km</span></div></label>
         <label className="field half"><span className="label">Apodo</span>
           <input value={v.name || ''} onChange={(e) => set('name', e.target.value)} placeholder="Ej: La Negra" /></label>
+      </div>
+
+      <span className="label mt">Propietario</span>
+      {owners.length > 0 && (
+        <div className="chips mt-s">
+          {owners.map(([name, id]) => (
+            <button type="button" key={name} className={`chip ${v.ownerName === name ? 'on' : ''}`}
+              onClick={() => setV((x) => ({ ...x, ownerName: name, ownerId: id }))}>
+              <User size={13} />{name}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="form-grid mt-s">
+        <label className="field half"><span className="label">Nombre del propietario</span>
+          <input value={v.ownerName || ''} onChange={(e) => set('ownerName', e.target.value)} placeholder="Nombre completo" autoComplete="name" /></label>
+        <label className="field half"><span className="label">Cédula / NIT</span>
+          <input value={v.ownerId || ''} onChange={(e) => set('ownerId', e.target.value.toUpperCase())} placeholder="CC 1020304050" /></label>
       </div>
 
       <button type="button" className="more-toggle" onClick={() => setMore(!more)}>
