@@ -43,7 +43,7 @@ export default function App() {
     if (vehicle && settings.notifications) notifyAlerts(alerts, vehicle.name || `${vehicle.brand} ${vehicle.model}`);
   }, [vehicle?.id, urgent, settings.notifications]); // eslint-disable-line
 
-  if (!authReady) return <div className="splash"><img src="/favicon.svg" alt="" /><Loader2 className="spin" /></div>;
+  if (!authReady) return <div className="splash"><img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" /><Loader2 className="spin" /></div>;
   if (!session && mode !== 'local') return <Auth />;
 
   if (!state.vehicles.length) {

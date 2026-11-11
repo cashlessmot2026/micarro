@@ -20,11 +20,11 @@ export default function Auth() {
         const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) throw error;
       } else if (tab === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email, password: pass, options: { emailRedirectTo: window.location.origin } });
+        const { data, error } = await supabase.auth.signUp({ email, password: pass, options: { emailRedirectTo: window.location.origin + import.meta.env.BASE_URL } });
         if (error) throw error;
         if (!data.session) setMsg({ ok: true, text: 'Te enviamos un correo para confirmar tu cuenta. Luego inicia sesión.' });
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + import.meta.env.BASE_URL });
         if (error) throw error;
         setMsg({ ok: true, text: 'Revisa tu correo para restablecer la contraseña.' });
       }
@@ -38,7 +38,7 @@ export default function Auth() {
   return (
     <div className="auth">
       <div className="auth-hero">
-        <img src="/favicon.svg" alt="" className="auth-logo" />
+        <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="auth-logo" />
         <h1>Mi Vehículo</h1>
         <p>Combustible, mantenimientos, documentos, multas y alertas. Todo en un solo lugar.</p>
         <div className="auth-feats">

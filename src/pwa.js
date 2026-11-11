@@ -39,7 +39,7 @@ export async function notifyAlerts(alerts, vehicleName) {
     const id = `${vehicleName}:${a.id}`;
     if (sent[id] === day) continue;
     sent[id] = day;
-    const opts = { body: a.detail, icon: '/pwa-192.png', badge: '/pwa-192.png', tag: id };
+    const opts = { body: a.detail, icon: `${import.meta.env.BASE_URL}pwa-192.png`, badge: `${import.meta.env.BASE_URL}pwa-192.png`, tag: id };
     try {
       if (reg) await reg.showNotification(`${vehicleName}: ${a.title}`, opts);
       else new Notification(`${vehicleName}: ${a.title}`, opts);
